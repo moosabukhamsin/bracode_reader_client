@@ -1,0 +1,12 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    mysqlplus (0.1.2)
+    sequel (4.17.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  mysqlplus
+  sequel
