@@ -1,0 +1,1 @@
+this is a program for reading barcode for client_side
