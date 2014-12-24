@@ -26,12 +26,17 @@ class Barcode
     response = Net::HTTP.get_response(uri)
     my_hash = JSON.parse(response.body)
     items = self.db()[:items]
+    items.select_all.delete
     my_hash.each do |mh|
-      items.insert({name: mh[:name], number: mh[:number]})
+    items.insert(name: mh["name"], number: mh["number"])
     end
   end
 
   def getname(number)
     return self.db[:items].where(number: number).first[:name]
+  end
+
+  def speak(str)
+    system("echo #{str} | espeak")
   end
 end
