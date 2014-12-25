@@ -1,42 +1,124 @@
-require 'sequel'
-require "net/http"
-require "uri"
-require 'json'
+require_relative 'barcode'
+require_relative 'dev_input'
 
-class Barcode
-  attr_accessor :db
+require 'thor'
 
-  def db
-    if @db.nil?
-      @db=Sequel.connect('mysql://root:123456@localhost/barcode')
-    end
-    return @db
+class BarcodeCli < Thor
+  attr_accessor :barcode
+
+  def initialize(a,b,c)
+    @barcode=Barcode.new
+    super
   end
 
+  desc "install", "inistall the program and create the dependency"
   def install
-    self.db().create_table :items do
-      primary_key :id
-      String :name
-      String :number
-    end
+    barcode.install
   end
 
+  desc "update", "update the data base from the server "
   def update
-    uri = URI.parse("http://localhost:3000/items.json")
-    response = Net::HTTP.get_response(uri)
-    my_hash = JSON.parse(response.body)
-    items = self.db()[:items]
-    items.select_all.delete
-    my_hash.each do |mh|
-    items.insert(name: mh["name"], number: mh["number"])
+    barcode.update
+  end
+
+  desc "iterate", "get number from data base and speak"
+  def iterate
+    while(true)do
+      number=ask("Number: ")
+      name=barcode.getname(number.chomp)
+      barcode.speak(name)
+    end    
+  end
+
+  desc "single", "get number from data base and speak"
+  def single(number)
+    # pass to daemon
+    output = open(barcode.config_vars['pipe_path'], "w+") # the w+ means we don't block
+    output.puts number
+    output.flush # do this when we're done writing data
+  end
+
+  desc "config","set configuration"
+  def config(database_path, pipe_path, server)
+    barcode.save_config(database_path,pipe_path,server)
+  end
+
+  desc "daemon", "run barcode speaker daemon"
+  def daemon
+    input = open(barcode.config_vars['pipe_path'], "r+")
+    while true
+      number = input.gets
+      number.chomp!
+      if number.size > 0
+        puts number
+        puts number.size
+        name=barcode.getname(number)
+        barcode.speak(name)
+      else
+        puts 'tick'
+      end
+      sleep 1
     end
   end
 
+  desc "update", "update the data base from the server "
   def getname(number)
-    return self.db[:items].where(number: number).first[:name]
+    puts barcode.getname(number)
+  end
+  desc "update", "update the data base from the server "
+  def speak(str)
+    barcode.speak(str)
   end
 
-  def speak(str)
-    system("echo #{str} | espeak")
+  desc "listener","Listen to input events"
+  def listener
+    pipe_path="/dev/input/by-id/usb-Honeywell_Scanning_and_Mobility_Honeywell_Scanning_and_Mobility_Scanner-event-kbd"
+
+    ctrl_hold=false
+    shift_hold=false
+    dev = DevInput.new pipe_path
+    buffer=""
+    dev.each do |event|
+      case event.value_str
+      when "Press"
+        case event.code_str
+        when "Enter"
+          name=barcode.getname(buffer)
+          barcode.speak(name)
+          buffer=""
+        when 'LeftShift'
+          shift_hold=true
+        when 'LeftControl'
+          ctrl_hold=true
+        else
+          if ctrl_hold==true
+          else
+            buffer+=event.code_str
+          end
+        end
+      when 'Release'
+        case event.code_str
+        when 'LeftControl'
+          ctrl_hold=false
+        when 'LeftShift'
+          shift_hold=false
+        end
+      end
+      # puts "got event #{event.code_str} #{event.value_str} #{event.type_str}"
+    end
+
+    # input = open(pipe_path, "r+")
+
+    # i=0
+    # while true
+    #   number = input.gets
+    #   f=File.open("#{i}.txt","w")
+    #   f.puts(number)
+    #   f.close
+    #   i+=1
+    #   sleep 1
+    # end
   end
 end
+
+BarcodeCli.start(ARGV)
