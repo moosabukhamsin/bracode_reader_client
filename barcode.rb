@@ -3,13 +3,14 @@ require "net/http"
 require "uri"
 require 'json'
 require 'thor'
+
 class Barcode
   attr_accessor :db, :config_vars
 
   def initialize
      #load config from config file or set default value
      self.config_vars={
-      'database_path' => 'mysql://root:123456@localhost/barcode',
+      'database_path' => 'mysql2://root:123456@localhost/barcode',
       'pipe_path' => 'my_pipe',
       'server_path' => 'http://localhost:3000/'
      }

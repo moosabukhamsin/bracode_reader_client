@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
 
 gem 'sequel'
-gem 'mysqlplus'
+gem 'mysql2'
 gem 'thor'
