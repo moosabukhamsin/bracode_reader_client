@@ -69,8 +69,15 @@ class Barcode
     end
   end
 
-
+  
   def speak(str)
     system("echo #{str} | espeak -s 100")
   end
+
+  def speakg(num)
+    name=self.getname(num)
+    system("echo #{name} | espeak -s 100")
+  end
+
+
 end
